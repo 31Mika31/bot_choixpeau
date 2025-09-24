@@ -1,0 +1,74 @@
+⚡ Guide d’utilisation du Bot Choixpeau Magique (pour admins Discord)
+1️⃣ Rôles à créer
+
+Sur ton serveur Discord, crée les rôles suivants :
+
+Admin
+
+Professeur
+
+Nouvel arrivant (attribué par défaut aux nouveaux membres)
+
+Gryffondor 🦁
+
+Serpentard 🐍
+
+Poufsouffle 🦡
+
+Serdaigle 🦅
+
+👉 Vérifie que le bot a la permission Gérer les rôles et qu’il est placé au-dessus des rôles maisons dans la hiérarchie.
+
+2️⃣ Salons à créer
+
+#règlement → les nouveaux doivent écrire Lumos pour valider.
+
+#halle-d-entrée → message temporaire d’accueil (10 min).
+
+#grande-salle → où les élèves lancent leur quiz avec !quiz.
+
+3️⃣ Fonctionnement pour les nouveaux
+
+Le nouvel arrivant reçoit le rôle Nouvel arrivant automatiquement.
+
+Dans #règlement, il doit écrire le mot magique Lumos (insensible à la casse).
+
+Son message est supprimé.
+
+Il perd le rôle Nouvel arrivant.
+
+Le bot envoie un message de félicitations (20 sec) + un message d’accueil dans #halle-d-entrée (10 min).
+
+Dans #grande-salle, il tape !quiz.
+
+Le bot crée un thread privé rien que pour lui.
+
+Il répond aux 10 questions.
+
+Le bot lui attribue une maison avec le bon rôle + emoji.
+
+4️⃣ Commandes disponibles
+
+!quiz → lance le quiz.
+
+!maison → affiche la maison d’un élève.
+
+!classement → affiche le classement des maisons.
+
+🔹 Commandes Admin
+
+!clean_threads → nettoie tous les threads de la Grande Salle.
+
+!force_house @pseudo Maison → attribue manuellement une maison.
+
+!reset_house @pseudo → retire un élève de sa maison.
+
+5️⃣ Conseils d’administration
+
+Épingle ton règlement dans #règlement.
+
+Vérifie que seul le mot Lumos est accepté → les autres messages sont supprimés.
+
+Si un élève a un souci avec le quiz, utilise !force_house ou !reset_house.
+
+Pour éviter l’encombrement, le bot supprime automatiquement ses propres messages au bout de 20s (règlement) et 10min (hall d’entrée).
