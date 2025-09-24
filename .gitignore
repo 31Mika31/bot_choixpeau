@@ -1,0 +1,18 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtualenv
+venv/
+.env
+
+# Editor settings
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Config sensible (ne jamais committer ton token Discord)
+config.json
