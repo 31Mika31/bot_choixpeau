@@ -44,7 +44,6 @@ class QuizCog(commands.Cog):
             return user == ctx.author and str(reaction.emoji) in ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]
 
         for q in selected:
-            # Si le joueur a annulé avec stopquiz
             if ctx.author.id not in self.active_quizzes:
                 return
 
@@ -61,13 +60,13 @@ class QuizCog(commands.Cog):
                 idx = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"].index(str(reaction.emoji))
                 maison = q["options"][idx]["maison"]
                 scores[maison] = scores.get(maison, 0) + 1
-                await msg.delete()  # ✅ supprime la question après réponse
+                await msg.delete()
             except asyncio.TimeoutError:
                 await ctx.send("⏰ Temps écoulé.", delete_after=10)
-                await msg.delete()  # ✅ supprime aussi en cas de timeout
+                await msg.delete()
 
         if ctx.author.id not in self.active_quizzes:
-            return  # évite un message final si stopquiz a été utilisé
+            return
 
         if not scores:
             await ctx.send("❌ Aucune maison déterminée.")
@@ -75,12 +74,61 @@ class QuizCog(commands.Cog):
             return
 
         maison_finale = max(scores, key=scores.get)
+
+        # 🎨 Couleurs, emojis et blasons
+        maisons_info = {
+            "Gryffondor": {
+                "couleur": discord.Color.red(),
+                "emoji": "🦁",
+                "image": "https://i.imgur.com/V0pXQBJ.png",
+            },
+            "Serdaigle": {
+                "couleur": discord.Color.blue(),
+                "emoji": "🦅",
+                "image": "https://i.imgur.com/5D5H7ZT.png",
+            },
+            "Serpentard": {
+                "couleur": discord.Color.green(),
+                "emoji": "🐍",
+                "image": "https://i.imgur.com/vp1ZTLh.png",
+            },
+            "Poufsouffle": {
+                "couleur": discord.Color.gold(),
+                "emoji": "🦡",
+                "image": "https://i.imgur.com/Hq5p0Cg.png",
+            },
+        }
+
+        info = maisons_info.get(maison_finale, {})
+        couleur_embed = info.get("couleur", discord.Color.purple())
+        emoji_maison = info.get("emoji", "👒")
+        image_maison = info.get("image", None)
+
+        # 1️⃣ Message suspense
+        suspense_msg = await ctx.send(
+            f"👒 *Le Choixpeau est posé sur la tête de {ctx.author.mention}...* 🤔\n"
+            "« Hmm... voyons voir... »"
+        )
+        await asyncio.sleep(5)  # pause dramatique
+        await suspense_msg.delete()
+
+        # 2️⃣ Révélation
+        description = (
+            f"👒 Le Choixpeau magique réfléchit un instant, puis s’exclame :\n\n"
+            f"🎩 **« {maison_finale.upper()} ! »** {emoji_maison}\n\n"
+            f"✨ {ctx.author.mention}, tu rejoins officiellement ta maison à Poudlard !"
+        )
+
         embed = discord.Embed(
             title="🎩 Le Choixpeau a parlé !",
-            description=f"✨ {ctx.author.mention}, tu rejoins **{maison_finale}** !",
-            color=discord.Color.purple()
+            description=description,
+            color=couleur_embed
         )
-        await ctx.send(embed=embed, delete_after=30)
+
+        if image_maison:
+            embed.set_image(url=image_maison)
+
+        await ctx.send(embed=embed, delete_after=60)
 
         # Attribution du rôle maison
         role = discord.utils.get(ctx.guild.roles, name=maison_finale)
