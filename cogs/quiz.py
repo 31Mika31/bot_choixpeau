@@ -1,4 +1,3 @@
-# cogs/quiz.py
 import discord, json, random, asyncio, os
 from discord.ext import commands
 
@@ -23,6 +22,14 @@ class QuizCog(commands.Cog):
         if ctx.author.id in self.active_quizzes:
             await ctx.send("⚠️ Tu as déjà un quiz en cours.")
             return
+
+        # 🧹 Supprimer le message RP du Hall-d-Entrée si présent
+        if ctx.author.id in self.bot.welcome_messages:
+            try:
+                msg = self.bot.welcome_messages.pop(ctx.author.id)
+                await msg.delete()
+            except Exception:
+                pass
 
         questions = load_questions()
         if not questions:
@@ -94,6 +101,5 @@ class QuizCog(commands.Cog):
         else:
             await ctx.send("❌ Aucun quiz en cours.")
 
-# ⚠️ Setup asynchrone obligatoire avec discord.py v2
 async def setup(bot):
     await bot.add_cog(QuizCog(bot))
