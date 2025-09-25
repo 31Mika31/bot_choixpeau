@@ -1,65 +1,44 @@
 import discord
 from discord.ext import commands
 
-CHANNEL_REGLEMENT = "règlement"
-CHANNEL_HALLE = "halle-d-entrée"
-
-class Reglement(commands.Cog):
+class ReglementCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        # Ignore les messages du bot lui-même
         if message.author.bot:
             return
 
-        # Log debug pour Render
-        print(f"[DEBUG] Salon: {message.channel.name} | Auteur: {message.author} | Message: {message.content}")
-
-        # Vérifie uniquement dans #règlement
-        if message.channel.name == CHANNEL_REGLEMENT:
-            content = message.content.strip().lower()
+        # Vérifie le bon canal + le mot-clé "lumos"
+        if message.channel.name == "règlement" and message.content.lower().strip() == "lumos":
             guild = message.guild
             member = message.author
 
-            if content == "lumos":
+            # Attribue le rôle Élève
+            role = discord.utils.get(guild.roles, name="Élève")
+            if role:
                 try:
-                    await message.delete()
-                except:
-                    pass
+                    await member.add_roles(role, reason="Validation du règlement")
+                except discord.Forbidden:
+                    await message.channel.send(
+                        f"⚠️ {member.mention}, je n’ai pas la permission de t’ajouter le rôle."
+                    )
+                    return
 
-                # Retirer rôle "Nouvel arrivant"
-                new_role = discord.utils.get(guild.roles, name="Nouvel arrivant")
-                if new_role in member.roles:
-                    await member.remove_roles(new_role)
+            # Cherche le salon textuel Hall-d-Entrée
+            hall = discord.utils.get(guild.text_channels, name="hall-d-entrée")
 
-                # Ajouter rôle "Élève"
-                eleve_role = discord.utils.get(guild.roles, name="Élève")
-                if eleve_role and eleve_role not in member.roles:
-                    await member.add_roles(eleve_role)
-
-                # Message de confirmation auto-supprimé
+            # Message de confirmation
+            if hall:
                 await message.channel.send(
-                    f"✨ Bravo {member.mention}, tu as validé le règlement !",
-                    delete_after=30
+                    f"✨ Bravo {member.mention}, tu as validé le règlement et reçu ton rôle d’Élève !\n"
+                    f"👉 Rends-toi maintenant dans {hall.mention} pour continuer ton aventure."
+                )
+            else:
+                await message.channel.send(
+                    f"✨ Bravo {member.mention}, tu as validé le règlement et reçu ton rôle d’Élève !"
                 )
 
-                # Message RP dans le hall
-                hall_channel = discord.utils.get(guild.text_channels, name=CHANNEL_HALLE)
-                if hall_channel:
-                    await hall_channel.send(
-                        content=(
-                            f"👋 Bienvenue à Poudlard !\n"
-                            f"{member.mention}, te voici dans le Hall d’entrée.\n\n"
-                            f"Avance vers la Grande Salle pour participer à la cérémonie de répartition."
-                        )
-                    )
-            else:
-                try:
-                    await message.delete()
-                except:
-                    pass
-
 async def setup(bot):
-    await bot.add_cog(Reglement(bot))
+    await bot.add_cog(ReglementCog(bot))
