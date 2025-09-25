@@ -39,30 +39,42 @@ def run_flask():
 
 threading.Thread(target=run_flask, daemon=True).start()
 
-# Intents (message_content nécessaire pour lire "lumos")
+# Intents (message_content nécessaire pour lire les commandes textuelles)
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.guilds = True
 
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
-# expose la config au reste du bot
 bot.config = config
-# dictionnaire partagé (welcome messages, etc.)
 bot.welcome_messages = {}
+
+# -----------------------------------------------------------
+# Commande simple de test
+# -----------------------------------------------------------
+@bot.command()
+async def ping(ctx):
+    await ctx.send("pong 🏓")
+
+# -----------------------------------------------------------
+# Chargement asynchrone des cogs
+# -----------------------------------------------------------
+async def load_extensions():
+    extensions = ["cogs.quiz", "cogs.reglement", "cogs.views"]
+    for ext in extensions:
+        try:
+            await bot.load_extension(ext)
+            log.info(f"✅ Extension chargée : {ext}")
+        except Exception as e:
+            log.exception(f"❌ Échec chargement extension {ext} : {e}")
 
 @bot.event
 async def on_ready():
     log.info(f"Bot connecté : {bot.user} (guilds: {len(bot.guilds)})")
+    await load_extensions()
     log.info("Cogs chargés : " + ", ".join(bot.extensions.keys()))
 
-# Charge les cogs et logue proprement les erreurs
-extensions = ["cogs.quiz", "cogs.reglement", "cogs.views"]
-for ext in extensions:
-    try:
-        bot.load_extension(ext)
-        log.info(f"✅ Extension chargée : {ext}")
-    except Exception as e:
-        log.exception(f"❌ Échec chargement extension {ext} : {e}")
-
+# -----------------------------------------------------------
+# Lancer le bot
+# -----------------------------------------------------------
 bot.run(TOKEN)
