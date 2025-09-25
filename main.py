@@ -6,16 +6,20 @@ from discord.ext import commands
 logging.basicConfig(level=logging.INFO)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Load config
+# Load config.json si dispo, sinon vide
 config_path = os.path.join(BASE_DIR, "config.json")
-with open(config_path, "r", encoding="utf-8") as f:
-    config = json.load(f)
+config = {}
+if os.path.exists(config_path):
+    with open(config_path, "r", encoding="utf-8") as f:
+        config = json.load(f)
 
-TOKEN = config.get("TOKEN") or os.getenv("DISCORD_TOKEN")
+# Token en priorité depuis Render (variable d'environnement)
+TOKEN = os.getenv("DISCORD_TOKEN") or config.get("TOKEN")
 PREFIX = config.get("PREFIX", "!")
 
 if not TOKEN:
     raise SystemExit("❌ DISCORD TOKEN not found in config.json or environment.")
+
 
 # Flask app for keep-alive
 app = Flask(__name__)
