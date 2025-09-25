@@ -14,10 +14,11 @@ def load_questions():
 class QuizCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.active_quizzes = {}
+        self.active_quizzes = {}  # {user_id: True}
 
     @commands.command(name="quiz")
     async def start_quiz(self, ctx):
+        """Lancer le quiz de répartition"""
         if ctx.author.id in self.active_quizzes:
             await ctx.send("⚠️ Tu as déjà un quiz en cours.")
             return
@@ -28,31 +29,41 @@ class QuizCog(commands.Cog):
             return
 
         selected = random.sample(questions, min(10, len(questions)))
-        self.active_quizzes[ctx.author.id] = selected
-
+        self.active_quizzes[ctx.author.id] = True
         scores = {}
 
         def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["1️⃣","2️⃣","3️⃣","4️⃣"]
+            return user == ctx.author and str(reaction.emoji) in ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]
 
         for q in selected:
+            # Si le joueur a annulé avec stopquiz
+            if ctx.author.id not in self.active_quizzes:
+                return
+
             embed = discord.Embed(title=q["question"], color=discord.Color.purple())
-            for i,opt in enumerate(q["options"],1):
+            for i, opt in enumerate(q["options"], 1):
                 embed.add_field(name=f"{i}️⃣", value=opt["texte"], inline=False)
+
             msg = await ctx.send(embed=embed)
-            for e in ["1️⃣","2️⃣","3️⃣","4️⃣"]:
+            for e in ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]:
                 await msg.add_reaction(e)
 
             try:
                 reaction, _ = await self.bot.wait_for("reaction_add", timeout=60.0, check=check)
-                idx = ["1️⃣","2️⃣","3️⃣","4️⃣"].index(str(reaction.emoji))
+                idx = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"].index(str(reaction.emoji))
                 maison = q["options"][idx]["maison"]
-                scores[maison] = scores.get(maison,0)+1
+                scores[maison] = scores.get(maison, 0) + 1
+                await msg.delete()  # ✅ supprime la question après réponse
             except asyncio.TimeoutError:
-                await ctx.send("⏰ Temps écoulé.")
+                await ctx.send("⏰ Temps écoulé.", delete_after=10)
+                await msg.delete()  # ✅ supprime aussi en cas de timeout
+
+        if ctx.author.id not in self.active_quizzes:
+            return  # évite un message final si stopquiz a été utilisé
 
         if not scores:
             await ctx.send("❌ Aucune maison déterminée.")
+            del self.active_quizzes[ctx.author.id]
             return
 
         maison_finale = max(scores, key=scores.get)
@@ -63,6 +74,7 @@ class QuizCog(commands.Cog):
         )
         await ctx.send(embed=embed, delete_after=30)
 
+        # Attribution du rôle maison
         role = discord.utils.get(ctx.guild.roles, name=maison_finale)
         if role:
             try:
@@ -74,6 +86,7 @@ class QuizCog(commands.Cog):
 
     @commands.command(name="stopquiz")
     async def stop_quiz(self, ctx):
+        """Arrêter un quiz en cours"""
         if ctx.author.id in self.active_quizzes:
             del self.active_quizzes[ctx.author.id]
             await ctx.send("🛑 Quiz interrompu.")
