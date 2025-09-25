@@ -1,3 +1,4 @@
+# cogs/quiz.py
 import discord, json, random, asyncio, os
 from discord.ext import commands
 
@@ -93,5 +94,6 @@ class QuizCog(commands.Cog):
         else:
             await ctx.send("❌ Aucun quiz en cours.")
 
-def setup(bot):
-    bot.add_cog(QuizCog(bot))
+# ⚠️ Setup asynchrone obligatoire avec discord.py v2
+async def setup(bot):
+    await bot.add_cog(QuizCog(bot))
