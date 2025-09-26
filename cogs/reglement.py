@@ -9,6 +9,7 @@ with open(os.path.join(BASE_DIR, "config.json"), "r", encoding="utf-8") as f:
     config = json.load(f)
 
 CHANNEL_IDS = config.get("CHANNEL_IDS", {})
+ROLES = config.get("ROLES", {})
 
 
 class EntryView(discord.ui.View):
@@ -65,9 +66,19 @@ class Reglement(commands.Cog):
             guild = message.guild
             member = message.author
 
-            role = discord.utils.get(guild.roles, name="Élève")
-            if role and role not in member.roles:
-                await member.add_roles(role)
+            # Ajouter le rôle "Élève"
+            role_eleve_name = ROLES.get("ELEVE")
+            if role_eleve_name:
+                role_eleve = discord.utils.get(guild.roles, name=role_eleve_name)
+                if role_eleve and role_eleve not in member.roles:
+                    await member.add_roles(role_eleve)
+
+            # Retirer le rôle "Nouvel arrivant" si défini
+            role_nouvel_name = ROLES.get("NOUVEL")
+            if role_nouvel_name:
+                role_nouvel = discord.utils.get(guild.roles, name=role_nouvel_name)
+                if role_nouvel and role_nouvel in member.roles:
+                    await member.remove_roles(role_nouvel)
 
             try:
                 await message.delete()
