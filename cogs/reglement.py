@@ -1,25 +1,19 @@
 import discord
 from discord.ext import commands
 import asyncio
-import json, os
-
-# Charger config.json
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-with open(os.path.join(BASE_DIR, "config.json"), "r", encoding="utf-8") as f:
-    config = json.load(f)
-
-CHANNEL_IDS = config.get("CHANNEL_IDS", {})
-ROLES = config.get("ROLES", {})
+import os
 
 
 class EntryView(discord.ui.View):
-    def __init__(self, guild_id: int):
+    def __init__(self, guild_id: int, hall_id: int, grande_salle_id: int):
         super().__init__(timeout=None)
         self.guild_id = guild_id
+        self.hall_id = hall_id
+        self.grande_salle_id = grande_salle_id
 
     @discord.ui.button(label="🚪 Entrer dans le Hall-d’Entrée", style=discord.ButtonStyle.primary, custom_id="enter_hall")
     async def enter_hall(self, interaction: discord.Interaction, button: discord.ui.Button):
-        hall_channel = interaction.guild.get_channel(CHANNEL_IDS.get("HALL"))
+        hall_channel = interaction.guild.get_channel(self.hall_id)
         if hall_channel:
             msg = await hall_channel.send(
                 f"🪄 Les lourdes portes grincent et {interaction.user.mention} franchit enfin le **Hall-d’Entrée**...\n\n"
@@ -37,7 +31,7 @@ class EntryView(discord.ui.View):
 
     @discord.ui.button(label="🏰 Se rendre à la Grande-Salle", style=discord.ButtonStyle.success, custom_id="go_grande_salle")
     async def go_grande_salle(self, interaction: discord.Interaction, button: discord.ui.Button):
-        grande_salle_channel = interaction.guild.get_channel(CHANNEL_IDS.get("GRANDE_SALLE"))
+        grande_salle_channel = interaction.guild.get_channel(self.grande_salle_id)
         if grande_salle_channel:
             await interaction.response.send_message(
                 f"🏰 Tu te diriges vers la **Grande-Salle** : {grande_salle_channel.mention}\n\n"
@@ -57,35 +51,43 @@ class Reglement(commands.Cog):
         self.bot = bot
         self.bot.welcome_messages = {}
 
+        # Récupération des IDs depuis les variables d'environnement
+        self.channel_ids = {
+            "REGLEMENT": int(os.getenv("CHANNEL_REGLEMENT", 0)),
+            "HALL": int(os.getenv("CHANNEL_HALL", 0)),
+            "GRANDE_SALLE": int(os.getenv("CHANNEL_GRANDE_SALLE", 0)),
+        }
+
+        self.roles = {
+            "ELEVE": os.getenv("ROLE_ELEVE", "Élève"),
+            "NOUVEL": os.getenv("ROLE_NOUVEL", "Nouvel arrivant"),
+        }
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot:
             return
 
-        if message.channel.id == CHANNEL_IDS.get("REGLEMENT") and message.content.lower().strip() == "lumos":
+        if message.channel.id == self.channel_ids.get("REGLEMENT") and message.content.lower().strip() == "lumos":
             guild = message.guild
             member = message.author
 
             # Ajouter le rôle "Élève"
-            role_eleve_name = ROLES.get("ELEVE")
-            if role_eleve_name:
-                role_eleve = discord.utils.get(guild.roles, name=role_eleve_name)
-                if role_eleve and role_eleve not in member.roles:
-                    await member.add_roles(role_eleve)
+            role_eleve = discord.utils.get(guild.roles, name=self.roles.get("ELEVE"))
+            if role_eleve and role_eleve not in member.roles:
+                await member.add_roles(role_eleve)
 
-            # Retirer le rôle "Nouvel arrivant" si défini
-            role_nouvel_name = ROLES.get("NOUVEL")
-            if role_nouvel_name:
-                role_nouvel = discord.utils.get(guild.roles, name=role_nouvel_name)
-                if role_nouvel and role_nouvel in member.roles:
-                    await member.remove_roles(role_nouvel)
+            # Retirer le rôle "Nouvel arrivant"
+            role_nouvel = discord.utils.get(guild.roles, name=self.roles.get("NOUVEL"))
+            if role_nouvel and role_nouvel in member.roles:
+                await member.remove_roles(role_nouvel)
 
             try:
                 await message.delete()
             except discord.Forbidden:
                 pass
 
-            hall_channel = guild.get_channel(CHANNEL_IDS.get("HALL"))
+            hall_channel = guild.get_channel(self.channel_ids.get("HALL"))
             if hall_channel:
                 rp_message = (
                     f"🪄 Les lourdes portes grincent et {member.mention} franchit enfin le **Hall-d’Entrée**...\n\n"
@@ -97,7 +99,7 @@ class Reglement(commands.Cog):
                     "et invoque le Choixpeau magique en lançant la commande `!quiz`."
                 )
 
-                view = EntryView(guild.id)
+                view = EntryView(guild.id, self.channel_ids["HALL"], self.channel_ids["GRANDE_SALLE"])
                 msg = await hall_channel.send(rp_message, view=view)
 
                 self.bot.welcome_messages[member.id] = msg

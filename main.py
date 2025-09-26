@@ -1,6 +1,5 @@
 # main.py
 import os
-import json
 import threading
 import logging
 from flask import Flask
@@ -10,21 +9,12 @@ from discord.ext import commands
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("choixpeau")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Charge config.json si présent (sinon on continue — utiliser ENV VARS)
-config = {}
-config_path = os.path.join(BASE_DIR, "config.json")
-if os.path.exists(config_path):
-    with open(config_path, "r", encoding="utf-8") as f:
-        config = json.load(f)
-
-# Token : priorité à la variable d'environnement (Render)
-TOKEN = os.getenv("DISCORD_TOKEN") or config.get("TOKEN")
-PREFIX = os.getenv("BOT_PREFIX") or config.get("PREFIX", "!")
+# Token et préfixe : uniquement via variables d'environnement
+TOKEN = os.getenv("DISCORD_TOKEN")
+PREFIX = os.getenv("BOT_PREFIX", "!")
 
 if not TOKEN:
-    raise SystemExit("❌ DISCORD_TOKEN not found in environment or config.json")
+    raise SystemExit("❌ DISCORD_TOKEN non trouvé dans les variables d'environnement")
 
 # Simple Flask keep-alive (Render)
 app = Flask(__name__)
@@ -46,7 +36,6 @@ intents.members = True
 intents.guilds = True
 
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
-bot.config = config
 bot.welcome_messages = {}
 
 # -----------------------------------------------------------
@@ -60,7 +49,7 @@ async def ping(ctx):
 # Chargement asynchrone des cogs
 # -----------------------------------------------------------
 async def load_extensions():
-    extensions = ["cogs.quiz", "cogs.reglement", "cogs.views"]
+    extensions = ["cogs.quiz", "cogs.reglement"]  # ⚡ plus de "cogs.views"
     for ext in extensions:
         try:
             await bot.load_extension(ext)
