@@ -1,3 +1,4 @@
+# cogs/reglement.py
 import discord
 from discord.ext import commands
 import asyncio
@@ -11,12 +12,16 @@ class EntryView(discord.ui.View):
         self.hall_id = hall_id
         self.grande_salle_id = grande_salle_id
 
-    @discord.ui.button(label="🚪 Entrer dans le Hall-d’Entrée", style=discord.ButtonStyle.primary, custom_id="enter_hall")
-    async def enter_hall(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(
+        label="🚪 Entrer dans le Hall-d’Entrée",
+        style=discord.ButtonStyle.primary,
+        custom_id="enter_hall"
+    )
+    async def enter_hall(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         hall_channel = interaction.guild.get_channel(self.hall_id)
         if hall_channel:
-            await interaction.response.defer(ephemeral=True)
-
             msg = await hall_channel.send(
                 f"🪄 Les lourdes portes grincent et {interaction.user.mention} franchit enfin le **Hall-d’Entrée**...\n\n"
                 "De hautes torches magiques illuminent les pierres froides, projetant des ombres dansantes.\n\n"
@@ -26,44 +31,35 @@ class EntryView(discord.ui.View):
                 "➡️ **Rends-toi maintenant dans la Grande-Salle** pour la Cérémonie de Répartition "
                 "et invoque le Choixpeau magique en lançant la commande `!quiz`."
             )
-
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 "✨ Tu as franchi les portes et pénétré dans le Hall-d’Entrée !",
-                ephemeral=True
+                ephemeral=True,
             )
-
             interaction.client.welcome_messages[interaction.user.id] = msg
 
-            # Supprimer le message avec les boutons
-            try:
-                await interaction.message.delete()
-            except Exception:
-                pass
-
-    @discord.ui.button(label="🏰 Se rendre à la Grande-Salle", style=discord.ButtonStyle.success, custom_id="go_grande_salle")
-    async def go_grande_salle(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(
+        label="🏰 Se rendre à la Grande-Salle",
+        style=discord.ButtonStyle.success,
+        custom_id="go_grande_salle"
+    )
+    async def go_grande_salle(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         grande_salle_channel = interaction.guild.get_channel(self.grande_salle_id)
         if grande_salle_channel:
-            await interaction.response.defer(ephemeral=True)
-
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 f"🏰 Tu te diriges vers la **Grande-Salle** : {grande_salle_channel.mention}\n\n"
                 "Prépare-toi… le Choixpeau t’attend pour la Répartition !",
-                ephemeral=True
+                ephemeral=True,
             )
-
-            old_msg = interaction.client.welcome_messages.pop(interaction.user.id, None)
+            old_msg = interaction.client.welcome_messages.pop(
+                interaction.user.id, None
+            )
             if old_msg:
                 try:
                     await old_msg.delete()
                 except Exception:
                     pass
-
-            # Supprimer le message avec les boutons
-            try:
-                await interaction.message.delete()
-            except Exception:
-                pass
 
 
 class Reglement(commands.Cog):
@@ -88,7 +84,11 @@ class Reglement(commands.Cog):
         if message.author.bot:
             return
 
-        if message.channel.id == self.channel_ids.get("REGLEMENT") and message.content.lower().strip() == "lumos":
+        # Vérifie que le message est "lumos" dans le bon salon
+        if (
+            message.channel.id == self.channel_ids.get("REGLEMENT")
+            and message.content.lower().strip() == "lumos"
+        ):
             guild = message.guild
             member = message.author
 
@@ -107,24 +107,26 @@ class Reglement(commands.Cog):
             except discord.Forbidden:
                 pass
 
+            # 🎉 Message RP intermédiaire
             hall_channel = guild.get_channel(self.channel_ids.get("HALL"))
             if hall_channel:
                 rp_message = (
-                    f"🪄 Les lourdes portes grincent et {member.mention} franchit enfin le **Hall-d’Entrée**...\n\n"
-                    "De hautes torches magiques illuminent les pierres froides, projetant des ombres dansantes.\n\n"
-                    "Une voix solennelle résonne dans le silence :\n"
-                    "« Tu as prêté serment en validant le règlement… "
-                    "Tu peux désormais faire officiellement ton entrée à **Poudlard** ! »\n\n"
-                    "➡️ **Rends-toi maintenant dans la Grande-Salle** pour la Cérémonie de Répartition "
-                    "et invoque le Choixpeau magique en lançant la commande `!quiz`."
+                    f"🎉 Félicitations {member.mention} ! Tu vas pouvoir accéder à "
+                    "l’école des sorciers **Poudlard**.\n\n"
+                    f"➡️ Rends-toi dès maintenant au **Hall-d’Entrée** en cliquant sur le bouton ci-dessous."
                 )
 
-                view = EntryView(guild.id, self.channel_ids["HALL"], self.channel_ids["GRANDE_SALLE"])
-                msg = await hall_channel.send(rp_message, view=view)
+                view = EntryView(
+                    guild.id,
+                    self.channel_ids["HALL"],
+                    self.channel_ids["GRANDE_SALLE"],
+                )
+                msg = await message.channel.send(rp_message, view=view)
 
                 self.bot.welcome_messages[member.id] = msg
 
-                async def delete_later():
+                async def delete_when_clicked():
+                    # supprime après 15 min si non utilisé
                     await asyncio.sleep(900)
                     if member.id in self.bot.welcome_messages:
                         try:
@@ -133,7 +135,7 @@ class Reglement(commands.Cog):
                         except Exception:
                             pass
 
-                asyncio.create_task(delete_later())
+                asyncio.create_task(delete_when_clicked())
 
 
 async def setup(bot):
