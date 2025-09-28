@@ -5,26 +5,65 @@ import os
 
 
 class EntryView(discord.ui.View):
-    def __init__(self, guild_id: int, grande_salle_id: int):
+    def __init__(self, guild_id: int, hall_id: int, grande_salle_id: int):
         super().__init__(timeout=None)
         self.guild_id = guild_id
+        self.hall_id = hall_id
         self.grande_salle_id = grande_salle_id
+
+    @discord.ui.button(label="🚪 Entrer dans le Hall-d’Entrée", style=discord.ButtonStyle.primary, custom_id="enter_hall")
+    async def enter_hall(self, interaction: discord.Interaction, button: discord.ui.Button):
+        hall_channel = interaction.guild.get_channel(self.hall_id)
+        if hall_channel:
+            await interaction.response.defer(ephemeral=True)
+
+            msg = await hall_channel.send(
+                f"🪄 Les lourdes portes grincent et {interaction.user.mention} franchit enfin le **Hall-d’Entrée**...\n\n"
+                "De hautes torches magiques illuminent les pierres froides, projetant des ombres dansantes.\n\n"
+                "Une voix solennelle résonne dans le silence :\n"
+                "« Tu as prêté serment en validant le règlement… "
+                "Tu peux désormais faire officiellement ton entrée à **Poudlard** ! »\n\n"
+                "➡️ **Rends-toi maintenant dans la Grande-Salle** pour la Cérémonie de Répartition "
+                "et invoque le Choixpeau magique en lançant la commande `!quiz`."
+            )
+
+            await interaction.followup.send(
+                "✨ Tu as franchi les portes et pénétré dans le Hall-d’Entrée !",
+                ephemeral=True
+            )
+
+            interaction.client.welcome_messages[interaction.user.id] = msg
+
+            # Supprimer le message avec les boutons
+            try:
+                await interaction.message.delete()
+            except Exception:
+                pass
 
     @discord.ui.button(label="🏰 Se rendre à la Grande-Salle", style=discord.ButtonStyle.success, custom_id="go_grande_salle")
     async def go_grande_salle(self, interaction: discord.Interaction, button: discord.ui.Button):
         grande_salle_channel = interaction.guild.get_channel(self.grande_salle_id)
         if grande_salle_channel:
-            await interaction.response.send_message(
+            await interaction.response.defer(ephemeral=True)
+
+            await interaction.followup.send(
                 f"🏰 Tu te diriges vers la **Grande-Salle** : {grande_salle_channel.mention}\n\n"
                 "Prépare-toi… le Choixpeau t’attend pour la Répartition !",
                 ephemeral=True
             )
+
             old_msg = interaction.client.welcome_messages.pop(interaction.user.id, None)
             if old_msg:
                 try:
                     await old_msg.delete()
                 except Exception:
                     pass
+
+            # Supprimer le message avec les boutons
+            try:
+                await interaction.message.delete()
+            except Exception:
+                pass
 
 
 class Reglement(commands.Cog):
@@ -71,7 +110,7 @@ class Reglement(commands.Cog):
             hall_channel = guild.get_channel(self.channel_ids.get("HALL"))
             if hall_channel:
                 rp_message = (
-                    f"🪄 Les lourdes portes grincent et {member.mention} franchit enfin le **Hall-d'Entrée**...\n\n"
+                    f"🪄 Les lourdes portes grincent et {member.mention} franchit enfin le **Hall-d’Entrée**...\n\n"
                     "De hautes torches magiques illuminent les pierres froides, projetant des ombres dansantes.\n\n"
                     "Une voix solennelle résonne dans le silence :\n"
                     "« Tu as prêté serment en validant le règlement… "
@@ -80,7 +119,7 @@ class Reglement(commands.Cog):
                     "et invoque le Choixpeau magique en lançant la commande `!quiz`."
                 )
 
-                view = EntryView(guild.id, self.channel_ids["GRANDE_SALLE"])
+                view = EntryView(guild.id, self.channel_ids["HALL"], self.channel_ids["GRANDE_SALLE"])
                 msg = await hall_channel.send(rp_message, view=view)
 
                 self.bot.welcome_messages[member.id] = msg
