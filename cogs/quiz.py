@@ -17,13 +17,16 @@ class QuizCog(commands.Cog):
         self.bot = bot
         self.active_quizzes = {}  # {user_id: True}
 
-        # Mapping maison -> rôle avec emoji
+        # Mapping maison -> rôle avec emoji (adapter aux noms exacts de ton serveur)
         self.roles_mapping = {
             "Gryffondor": "Gryffondor 🦁",
             "Poufsouffle": "Poufsouffle 🦡",
             "Serdaigle": "Serdaigle 🦅",
             "Serpentard": "Serpentard 🐍",
         }
+
+        # Rôle temporaire avant répartition
+        self.role_nouvel = os.getenv("ROLE_NOUVEL", "Nouvel arrivant")
 
     @commands.command(name="quiz")
     async def start_quiz(self, ctx):
@@ -150,6 +153,12 @@ class QuizCog(commands.Cog):
             try:
                 await ctx.author.add_roles(role)
                 await ctx.send(f"✅ Rôle **{role.name}** attribué avec succès !", delete_after=10)
+
+                # Retirer "Nouvel arrivant" si présent
+                role_nouvel = discord.utils.get(ctx.guild.roles, name=self.role_nouvel)
+                if role_nouvel and role_nouvel in ctx.author.roles:
+                    await ctx.author.remove_roles(role_nouvel)
+
             except discord.Forbidden:
                 await ctx.send("❌ Permissions insuffisantes pour attribuer le rôle.", delete_after=15)
             except Exception as e:
