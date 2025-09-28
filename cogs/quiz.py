@@ -1,3 +1,4 @@
+# cogs/quiz.py
 import discord, json, random, asyncio, os
 from discord.ext import commands
 
@@ -17,7 +18,7 @@ class QuizCog(commands.Cog):
         self.bot = bot
         self.active_quizzes = {}  # {user_id: True}
 
-        # Mapping maison -> rôle avec emoji (adapter aux noms exacts de ton serveur)
+        # Mapping maison -> rôle avec emoji
         self.roles_mapping = {
             "Gryffondor": "Gryffondor 🦁",
             "Poufsouffle": "Poufsouffle 🦡",
@@ -25,14 +26,11 @@ class QuizCog(commands.Cog):
             "Serpentard": "Serpentard 🐍",
         }
 
-        # Rôle temporaire avant répartition
-        self.role_nouvel = os.getenv("ROLE_NOUVEL", "Nouvel arrivant")
-
     @commands.command(name="quiz")
     async def start_quiz(self, ctx):
         """Lancer le quiz de répartition"""
         if ctx.author.id in self.active_quizzes:
-            await ctx.send("⚠️ Tu as déjà un quiz en cours.")
+            await ctx.send("⚠️ Tu as déjà un quiz en cours.", delete_after=10)
             return
 
         # Supprimer le message RP du Hall-d’Entrée si présent
@@ -45,7 +43,7 @@ class QuizCog(commands.Cog):
 
         questions = load_questions()
         if not questions:
-            await ctx.send("❌ Aucune question disponible.")
+            await ctx.send("❌ Aucune question disponible.", delete_after=10)
             return
 
         selected = random.sample(questions, min(10, len(questions)))
@@ -81,7 +79,7 @@ class QuizCog(commands.Cog):
             return
 
         if not scores:
-            await ctx.send("❌ Aucune maison déterminée.")
+            await ctx.send("❌ Aucune maison déterminée.", delete_after=10)
             del self.active_quizzes[ctx.author.id]
             return
 
@@ -153,12 +151,6 @@ class QuizCog(commands.Cog):
             try:
                 await ctx.author.add_roles(role)
                 await ctx.send(f"✅ Rôle **{role.name}** attribué avec succès !", delete_after=10)
-
-                # Retirer "Nouvel arrivant" si présent
-                role_nouvel = discord.utils.get(ctx.guild.roles, name=self.role_nouvel)
-                if role_nouvel and role_nouvel in ctx.author.roles:
-                    await ctx.author.remove_roles(role_nouvel)
-
             except discord.Forbidden:
                 await ctx.send("❌ Permissions insuffisantes pour attribuer le rôle.", delete_after=15)
             except Exception as e:
@@ -173,9 +165,9 @@ class QuizCog(commands.Cog):
         """Arrêter un quiz en cours"""
         if ctx.author.id in self.active_quizzes:
             del self.active_quizzes[ctx.author.id]
-            await ctx.send("🛑 Quiz interrompu.")
+            await ctx.send("🛑 Quiz interrompu.", delete_after=10)
         else:
-            await ctx.send("❌ Aucun quiz en cours.")
+            await ctx.send("❌ Aucun quiz en cours.", delete_after=10)
 
 async def setup(bot):
     await bot.add_cog(QuizCog(bot))
