@@ -6,14 +6,11 @@ from flask import Flask
 import discord
 from discord.ext import commands
 
-# -----------------------------------------------------------
-# Logs
-# -----------------------------------------------------------
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("choixpeau")
 
 # -----------------------------------------------------------
-# Token et préfixe
+# Token et préfixe via variables d'environnement
 # -----------------------------------------------------------
 TOKEN = os.getenv("DISCORD_TOKEN")
 PREFIX = os.getenv("BOT_PREFIX", "!")
@@ -22,20 +19,18 @@ if not TOKEN:
     raise SystemExit("❌ DISCORD_TOKEN non trouvé dans les variables d'environnement")
 
 # -----------------------------------------------------------
-# Flask keep-alive (Render)
+# Flask Keep-Alive (Render)
 # -----------------------------------------------------------
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "✅ Bot Choixpeau is running on Render!"
+    return "Bot Choixpeau is running!"
 
 def run_flask():
     port = int(os.getenv("PORT", 8080))
-    log.info(f"🌍 Flask serveur lancé sur le port {port}")
     app.run(host="0.0.0.0", port=port)
 
-# Lancer Flask en thread parallèle
 threading.Thread(target=run_flask, daemon=True).start()
 
 # -----------------------------------------------------------
@@ -49,12 +44,32 @@ intents.guilds = True
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 bot.welcome_messages = {}
 
-@bot.command()
-async def ping(ctx):
-    await ctx.send("pong 🏓")
+# -----------------------------------------------------------
+# Suppression automatique des commandes utilisateur
+# -----------------------------------------------------------
+@bot.listen("on_message")
+async def delete_command_messages(message: discord.Message):
+    """Supprime les messages des commandes (préfixées) après traitement."""
+    if message.author.bot:
+        return
+    if not message.content.startswith(PREFIX):
+        return
+
+    try:
+        await message.delete()
+        log.debug(f"Message de commande supprimé : {message.content}")
+    except Exception:
+        pass
 
 # -----------------------------------------------------------
-# Chargement des cogs
+# Commande simple de test
+# -----------------------------------------------------------
+@bot.command()
+async def ping(ctx):
+    await ctx.send("pong 🏓", delete_after=10)
+
+# -----------------------------------------------------------
+# Chargement asynchrone des cogs
 # -----------------------------------------------------------
 async def load_extensions():
     extensions = ["cogs.quiz", "cogs.reglement"]
@@ -67,13 +82,11 @@ async def load_extensions():
 
 @bot.event
 async def on_ready():
-    log.info(f"🤖 Bot connecté : {bot.user} (guilds: {len(bot.guilds)})")
+    log.info(f"Bot connecté : {bot.user} (guilds: {len(bot.guilds)})")
     await load_extensions()
-    log.info("📦 Cogs chargés : " + ", ".join(bot.extensions.keys()))
+    log.info("Cogs chargés : " + ", ".join(bot.extensions.keys()))
 
 # -----------------------------------------------------------
 # Lancer le bot
 # -----------------------------------------------------------
-if __name__ == "__main__":
-    log.info("🚀 Lancement du bot Choixpeau...")
-    bot.run(TOKEN)
+bot.run(TOKEN)
