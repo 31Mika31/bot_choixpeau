@@ -84,7 +84,7 @@ class EntryView(discord.ui.View):
                 "Tu peux désormais faire officiellement ton entrée à **Poudlard** ! »\n\n"
                 "➡️ **Rends-toi maintenant dans la Grande-Salle** pour la Cérémonie de Répartition "
                 "et invoque le Choixpeau magique en lançant la commande `!quiz`.",
-                view=GrandeSalleView(None, self.grande_salle_id)  # view corrigée après envoi
+                view=GrandeSalleView(None, self.grande_salle_id)
             )
             # Fixer la référence pour que la view sache supprimer ce message
             hall_msg.edit(view=GrandeSalleView(hall_msg, self.grande_salle_id))
@@ -114,7 +114,7 @@ class Reglement(commands.Cog):
         self.channel_ids = {
             "REGLEMENT": int(os.getenv("CHANNEL_REGLEMENT", 0)),
             "HALL": int(os.getenv("CHANNEL_HALL", 0)),
-            "GRANDE_SALLE": int(os.getenv("CHANNEL_GRANDE_SALLE", 0)),  # ✅ corrigé ici
+            "GRANDE_SALLE": int(os.getenv("CHANNEL_GRANDESALLE", 0)),
         }
 
         self.roles = {
