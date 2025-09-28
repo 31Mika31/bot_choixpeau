@@ -74,6 +74,9 @@ async def ping(ctx):
 async def load_extensions():
     extensions = ["cogs.quiz", "cogs.reglement"]
     for ext in extensions:
+        if ext in bot.extensions:
+            log.warning(f"⚠️ Extension déjà chargée ignorée : {ext}")
+            continue
         try:
             await bot.load_extension(ext)
             log.info(f"✅ Extension chargée : {ext}")
@@ -84,7 +87,8 @@ async def load_extensions():
 async def on_ready():
     log.info(f"Bot connecté : {bot.user} (guilds: {len(bot.guilds)})")
     await load_extensions()
-    log.info("Cogs chargés : " + ", ".join(bot.extensions.keys()))
+    log.info("Cogs actifs : " + ", ".join(bot.cogs.keys()))
+    log.info("Extensions actives : " + ", ".join(bot.extensions.keys()))
 
 # -----------------------------------------------------------
 # Lancer le bot

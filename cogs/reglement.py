@@ -27,7 +27,6 @@ class GrandeSalleView(discord.ui.View):
         except Exception:
             pass
 
-        # Message RP dans la Grande-Salle
         try:
             grande_msg = await grande_salle.send(
                 f"🍽️ {interaction.user.mention} pousse les lourdes portes et entre dans la **Grande-Salle**.\n\n"
@@ -35,14 +34,13 @@ class GrandeSalleView(discord.ui.View):
                 "Les regards des élèves se tournent vers toi tandis que le Choixpeau magique attend d’être invoqué...\n\n"
                 "➡️ Lance la commande `!quiz` pour commencer la Cérémonie de Répartition."
             )
-            # 🔹 Sauvegarder ce message pour le supprimer quand le quiz commencera
+            # Sauvegarder ce message pour le supprimer au lancement du quiz
             interaction.client.welcome_messages[interaction.user.id] = grande_msg
         except Exception:
             await interaction.followup.send("❌ Impossible d'envoyer le message dans la Grande-Salle.", ephemeral=True)
             return
 
         try:
-            # Supprimer le message du Hall (celui avec le bouton)
             await self.hall_message.delete()
         except Exception:
             pass
@@ -88,8 +86,7 @@ class EntryView(discord.ui.View):
                 "et invoque le Choixpeau magique en lançant la commande `!quiz`.",
                 view=GrandeSalleView(None, self.grande_salle_id)
             )
-            # Fixer la référence pour que la view sache supprimer ce message
-            hall_msg.edit(view=GrandeSalleView(hall_msg, self.grande_salle_id))
+            await hall_msg.edit(view=GrandeSalleView(hall_msg, self.grande_salle_id))
         except Exception:
             await interaction.followup.send("❌ Impossible d'envoyer le message dans le Hall.", ephemeral=True)
             return
@@ -116,7 +113,7 @@ class Reglement(commands.Cog):
         self.channel_ids = {
             "REGLEMENT": int(os.getenv("CHANNEL_REGLEMENT", 0)),
             "HALL": int(os.getenv("CHANNEL_HALL", 0)),
-            "GRANDE_SALLE": int(os.getenv("CHANNEL_GRANDE_SALLE", 0)),  # ✅ corrigé
+            "GRANDE_SALLE": int(os.getenv("CHANNEL_GRANDE_SALLE", 0)),
         }
 
         self.roles = {
@@ -136,10 +133,12 @@ class Reglement(commands.Cog):
             guild = message.guild
             member = message.author
 
+            # 🔒 Vérrouillage immédiat
             if member.id in self.bot.welcome_messages:
                 return
             self.bot.welcome_messages[member.id] = "pending"
 
+            # Attribution des rôles
             role_eleve = discord.utils.get(guild.roles, name=self.roles.get("ELEVE"))
             if role_eleve and role_eleve not in member.roles:
                 try:
