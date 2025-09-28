@@ -114,7 +114,7 @@ class Reglement(commands.Cog):
         self.channel_ids = {
             "REGLEMENT": int(os.getenv("CHANNEL_REGLEMENT", 0)),
             "HALL": int(os.getenv("CHANNEL_HALL", 0)),
-            "GRANDE_SALLE": int(os.getenv("CHANNEL_GRANDESALLE", 0)),
+            "GRANDE_SALLE": int(os.getenv("CHANNEL_GRANDE_SALLE", 0)),  # ✅ corrigé ici
         }
 
         self.roles = {

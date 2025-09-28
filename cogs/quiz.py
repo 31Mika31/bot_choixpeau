@@ -1,4 +1,3 @@
-# cogs/quiz.py
 import discord, json, random, asyncio, os
 from discord.ext import commands
 
@@ -29,8 +28,13 @@ class QuizCog(commands.Cog):
     @commands.command(name="quiz")
     async def start_quiz(self, ctx):
         """Lancer le quiz de répartition"""
+        try:
+            await ctx.message.delete()
+        except Exception:
+            pass
+
         if ctx.author.id in self.active_quizzes:
-            await ctx.send("⚠️ Tu as déjà un quiz en cours.")
+            await ctx.send("⚠️ Tu as déjà un quiz en cours.", delete_after=10)
             return
 
         # Supprimer le message RP du Hall-d’Entrée si présent
@@ -43,7 +47,7 @@ class QuizCog(commands.Cog):
 
         questions = load_questions()
         if not questions:
-            await ctx.send("❌ Aucune question disponible.")
+            await ctx.send("❌ Aucune question disponible.", delete_after=10)
             return
 
         selected = random.sample(questions, min(10, len(questions)))
@@ -79,33 +83,33 @@ class QuizCog(commands.Cog):
             return
 
         if not scores:
-            await ctx.send("❌ Aucune maison déterminée.")
+            await ctx.send("❌ Aucune maison déterminée.", delete_after=10)
             del self.active_quizzes[ctx.author.id]
             return
 
         maison_finale = max(scores, key=scores.get)
 
-        # 🎨 Couleurs, emojis et blasons
+        # 🎨 Couleurs, emojis et blasons (liens corrigés)
         maisons_info = {
             "Gryffondor": {
                 "couleur": discord.Color.red(),
                 "emoji": "🦁",
-                "image": "https://i.imgur.com/V0pXQBJ.png",
+                "image": "https://cdn.discordapp.com/emojis/1420532943042121859.webp?size=128",
             },
             "Serdaigle": {
                 "couleur": discord.Color.blue(),
                 "emoji": "🦅",
-                "image": "https://i.imgur.com/5D5H7ZT.png",
+                "image": "https://cdn.discordapp.com/emojis/1420532971508596847.webp?size=128",
             },
             "Serpentard": {
                 "couleur": discord.Color.green(),
                 "emoji": "🐍",
-                "image": "https://i.imgur.com/vp1ZTLh.png",
+                "image": "https://cdn.discordapp.com/emojis/1420532993877086249.webp?size=128",
             },
             "Poufsouffle": {
                 "couleur": discord.Color.gold(),
                 "emoji": "🦡",
-                "image": "https://i.imgur.com/Hq5p0Cg.png",
+                "image": "https://cdn.discordapp.com/emojis/1420533017272909834.webp?size=128",
             },
         }
 
@@ -139,7 +143,7 @@ class QuizCog(commands.Cog):
         )
 
         if image_maison:
-            embed.set_image(url=image_maison)
+            embed.set_thumbnail(url=image_maison)
 
         await ctx.send(embed=embed, delete_after=60)
 
@@ -163,11 +167,16 @@ class QuizCog(commands.Cog):
     @commands.command(name="stopquiz")
     async def stop_quiz(self, ctx):
         """Arrêter un quiz en cours"""
+        try:
+            await ctx.message.delete()
+        except Exception:
+            pass
+
         if ctx.author.id in self.active_quizzes:
             del self.active_quizzes[ctx.author.id]
-            await ctx.send("🛑 Quiz interrompu.")
+            await ctx.send("🛑 Quiz interrompu.", delete_after=10)
         else:
-            await ctx.send("❌ Aucun quiz en cours.")
+            await ctx.send("❌ Aucun quiz en cours.", delete_after=10)
 
 async def setup(bot):
     await bot.add_cog(QuizCog(bot))
