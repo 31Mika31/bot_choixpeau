@@ -28,6 +28,7 @@ class QuizCog(commands.Cog):
     @commands.command(name="quiz")
     async def start_quiz(self, ctx):
         """Lancer le quiz de répartition"""
+        # 🔹 Supprimer le message "!quiz"
         try:
             await ctx.message.delete()
         except Exception:
@@ -37,7 +38,7 @@ class QuizCog(commands.Cog):
             await ctx.send("⚠️ Tu as déjà un quiz en cours.", delete_after=10)
             return
 
-        # Supprimer le message RP du Hall-d’Entrée si présent
+        # 🔹 Supprimer le message RP précédent (Hall ou Grande-Salle)
         if ctx.author.id in getattr(self.bot, "welcome_messages", {}):
             try:
                 msg = self.bot.welcome_messages.pop(ctx.author.id)
@@ -50,6 +51,7 @@ class QuizCog(commands.Cog):
             await ctx.send("❌ Aucune question disponible.", delete_after=10)
             return
 
+        # 🔹 Tirage aléatoire
         selected = random.sample(questions, min(10, len(questions)))
         self.active_quizzes[ctx.author.id] = True
         scores = {}
@@ -89,7 +91,7 @@ class QuizCog(commands.Cog):
 
         maison_finale = max(scores, key=scores.get)
 
-        # 🎨 Couleurs, emojis et blasons (liens corrigés)
+        # 🎨 Couleurs, emojis et blasons
         maisons_info = {
             "Gryffondor": {
                 "couleur": discord.Color.red(),

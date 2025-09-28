@@ -29,12 +29,14 @@ class GrandeSalleView(discord.ui.View):
 
         # Message RP dans la Grande-Salle
         try:
-            await grande_salle.send(
+            grande_msg = await grande_salle.send(
                 f"🍽️ {interaction.user.mention} pousse les lourdes portes et entre dans la **Grande-Salle**.\n\n"
                 "Les quatre longues tables s’illuminent de mille chandelles flottantes. "
                 "Les regards des élèves se tournent vers toi tandis que le Choixpeau magique attend d’être invoqué...\n\n"
                 "➡️ Lance la commande `!quiz` pour commencer la Cérémonie de Répartition."
             )
+            # 🔹 Sauvegarder ce message pour le supprimer quand le quiz commencera
+            interaction.client.welcome_messages[interaction.user.id] = grande_msg
         except Exception:
             await interaction.followup.send("❌ Impossible d'envoyer le message dans la Grande-Salle.", ephemeral=True)
             return
@@ -114,7 +116,7 @@ class Reglement(commands.Cog):
         self.channel_ids = {
             "REGLEMENT": int(os.getenv("CHANNEL_REGLEMENT", 0)),
             "HALL": int(os.getenv("CHANNEL_HALL", 0)),
-            "GRANDE_SALLE": int(os.getenv("CHANNEL_GRANDE_SALLE", 0)),  # ✅ corrigé ici
+            "GRANDE_SALLE": int(os.getenv("CHANNEL_GRANDE_SALLE", 0)),  # ✅ corrigé
         }
 
         self.roles = {
