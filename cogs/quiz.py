@@ -8,7 +8,7 @@ def load_questions():
     try:
         with open(QUESTIONS_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
-            return data.get("questions", [])  # Retourne directement la liste des questions
+            return data.get("questions", [])
     except Exception:
         return []
 
@@ -17,6 +17,14 @@ class QuizCog(commands.Cog):
         self.bot = bot
         self.active_quizzes = {}  # {user_id: True}
 
+        # Mapping maison -> rôle avec emoji
+        self.roles_mapping = {
+            "Gryffondor": "Gryffondor 🦁",
+            "Poufsouffle": "Poufsouffle 🦡",
+            "Serdaigle": "Serdaigle 🦅",
+            "Serpentard": "Serpentard 🐍",
+        }
+
     @commands.command(name="quiz")
     async def start_quiz(self, ctx):
         """Lancer le quiz de répartition"""
@@ -24,8 +32,8 @@ class QuizCog(commands.Cog):
             await ctx.send("⚠️ Tu as déjà un quiz en cours.")
             return
 
-        # 🧹 Supprimer le message RP du Hall-d'Entrée si présent
-        if ctx.author.id in self.bot.welcome_messages:
+        # Supprimer le message RP du Hall-d’Entrée si présent
+        if ctx.author.id in getattr(self.bot, "welcome_messages", {}):
             try:
                 msg = self.bot.welcome_messages.pop(ctx.author.id)
                 await msg.delete()
@@ -103,19 +111,22 @@ class QuizCog(commands.Cog):
         info = maisons_info.get(maison_finale, {})
         couleur_embed = info.get("couleur", discord.Color.purple())
         emoji_maison = info.get("emoji", "👑")
-        image_maison = info.get("image", None)
+        image_maison = info.get("image")
 
         # 1️⃣ Message suspense
         suspense_msg = await ctx.send(
             f"👑 *Le Choixpeau est posé sur la tête de {ctx.author.mention}...* 🤔\n"
             "« Hmm... voyons voir... »"
         )
-        await asyncio.sleep(5)  # pause dramatique
-        await suspense_msg.delete()
+        await asyncio.sleep(5)
+        try:
+            await suspense_msg.delete()
+        except Exception:
+            pass
 
         # 2️⃣ Révélation
         description = (
-            f"👑 Le Choixpeau magique réfléchit un instant, puis s'exclame :\n\n"
+            f"👑 Le Choixpeau magique réfléchit un instant, puis s’exclame :\n\n"
             f"🎩 **« {maison_finale.upper()} ! »** {emoji_maison}\n\n"
             f"✨ {ctx.author.mention}, tu rejoins officiellement ta maison à Poudlard !"
         )
@@ -123,7 +134,7 @@ class QuizCog(commands.Cog):
         embed = discord.Embed(
             title="🎩 Le Choixpeau a parlé !",
             description=description,
-            color=couleur_embed
+            color=couleur_embed,
         )
 
         if image_maison:
@@ -131,18 +142,20 @@ class QuizCog(commands.Cog):
 
         await ctx.send(embed=embed, delete_after=60)
 
-        # Attribution du rôle maison avec gestion d'erreurs améliorée
-        role = discord.utils.get(ctx.guild.roles, name=maison_finale)
+        # Attribution du rôle maison
+        role_name = self.roles_mapping.get(maison_finale)
+        role = discord.utils.get(ctx.guild.roles, name=role_name)
+
         if role:
             try:
                 await ctx.author.add_roles(role)
-                await ctx.send(f"✅ Rôle {role.name} attribué avec succès !", delete_after=10)
+                await ctx.send(f"✅ Rôle **{role.name}** attribué avec succès !", delete_after=10)
             except discord.Forbidden:
-                await ctx.send("❌ Permissions insuffisantes pour attribuer le rôle. Contactez un administrateur.", delete_after=15)
+                await ctx.send("❌ Permissions insuffisantes pour attribuer le rôle.", delete_after=15)
             except Exception as e:
-                await ctx.send(f"❌ Erreur lors de l'attribution du rôle : {e}", delete_after=15)
+                await ctx.send(f"❌ Erreur lors de l’attribution du rôle : {e}", delete_after=15)
         else:
-            await ctx.send(f"❌ Rôle '{maison_finale}' introuvable. Contactez un administrateur.", delete_after=15)
+            await ctx.send(f"❌ Rôle introuvable pour la maison **{maison_finale}**.", delete_after=15)
 
         del self.active_quizzes[ctx.author.id]
 
