@@ -30,7 +30,7 @@ class QuizCog(commands.Cog):
     async def start_quiz(self, ctx):
         """Lancer le quiz de répartition"""
         if ctx.author.id in self.active_quizzes:
-            await ctx.send("⚠️ Tu as déjà un quiz en cours.", delete_after=10)
+            await ctx.send("⚠️ Tu as déjà un quiz en cours.")
             return
 
         # Supprimer le message RP du Hall-d’Entrée si présent
@@ -43,7 +43,7 @@ class QuizCog(commands.Cog):
 
         questions = load_questions()
         if not questions:
-            await ctx.send("❌ Aucune question disponible.", delete_after=10)
+            await ctx.send("❌ Aucune question disponible.")
             return
 
         selected = random.sample(questions, min(10, len(questions)))
@@ -79,7 +79,7 @@ class QuizCog(commands.Cog):
             return
 
         if not scores:
-            await ctx.send("❌ Aucune maison déterminée.", delete_after=10)
+            await ctx.send("❌ Aucune maison déterminée.")
             del self.active_quizzes[ctx.author.id]
             return
 
@@ -165,9 +165,9 @@ class QuizCog(commands.Cog):
         """Arrêter un quiz en cours"""
         if ctx.author.id in self.active_quizzes:
             del self.active_quizzes[ctx.author.id]
-            await ctx.send("🛑 Quiz interrompu.", delete_after=10)
+            await ctx.send("🛑 Quiz interrompu.")
         else:
-            await ctx.send("❌ Aucun quiz en cours.", delete_after=10)
+            await ctx.send("❌ Aucun quiz en cours.")
 
 async def setup(bot):
     await bot.add_cog(QuizCog(bot))
