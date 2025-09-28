@@ -6,11 +6,11 @@ import os
 
 
 class EntryView(discord.ui.View):
-    def __init__(self, guild_id: int, hall_id: int, grande_salle_id: int):
+    def __init__(self, guild_id: int, hall_id: int, origin_message=None):
         super().__init__(timeout=None)
         self.guild_id = guild_id
         self.hall_id = hall_id
-        self.grande_salle_id = grande_salle_id
+        self.origin_message = origin_message  # message "Félicitations..."
 
     @discord.ui.button(
         label="🚪 Entrer dans le Hall-d’Entrée",
@@ -22,6 +22,7 @@ class EntryView(discord.ui.View):
     ):
         hall_channel = interaction.guild.get_channel(self.hall_id)
         if hall_channel:
+            # Message RP dans le Hall
             msg = await hall_channel.send(
                 f"🪄 Les lourdes portes grincent et {interaction.user.mention} franchit enfin le **Hall-d’Entrée**...\n\n"
                 "De hautes torches magiques illuminent les pierres froides, projetant des ombres dansantes.\n\n"
@@ -37,27 +38,10 @@ class EntryView(discord.ui.View):
             )
             interaction.client.welcome_messages[interaction.user.id] = msg
 
-    @discord.ui.button(
-        label="🏰 Se rendre à la Grande-Salle",
-        style=discord.ButtonStyle.success,
-        custom_id="go_grande_salle"
-    )
-    async def go_grande_salle(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        grande_salle_channel = interaction.guild.get_channel(self.grande_salle_id)
-        if grande_salle_channel:
-            await interaction.response.send_message(
-                f"🏰 Tu te diriges vers la **Grande-Salle** : {grande_salle_channel.mention}\n\n"
-                "Prépare-toi… le Choixpeau t’attend pour la Répartition !",
-                ephemeral=True,
-            )
-            old_msg = interaction.client.welcome_messages.pop(
-                interaction.user.id, None
-            )
-            if old_msg:
+            # Supprimer le message "Félicitations..." une fois cliqué
+            if self.origin_message:
                 try:
-                    await old_msg.delete()
+                    await self.origin_message.delete()
                 except Exception:
                     pass
 
@@ -71,7 +55,6 @@ class Reglement(commands.Cog):
         self.channel_ids = {
             "REGLEMENT": int(os.getenv("CHANNEL_REGLEMENT", 0)),
             "HALL": int(os.getenv("CHANNEL_HALL", 0)),
-            "GRANDE_SALLE": int(os.getenv("CHANNEL_GRANDE_SALLE", 0)),
         }
 
         self.roles = {
@@ -84,7 +67,6 @@ class Reglement(commands.Cog):
         if message.author.bot:
             return
 
-        # Vérifie que le message est "lumos" dans le bon salon
         if (
             message.channel.id == self.channel_ids.get("REGLEMENT")
             and message.content.lower().strip() == "lumos"
@@ -107,35 +89,43 @@ class Reglement(commands.Cog):
             except discord.Forbidden:
                 pass
 
-            # 🎉 Message RP intermédiaire
-            hall_channel = guild.get_channel(self.channel_ids.get("HALL"))
-            if hall_channel:
-                rp_message = (
-                    f"🎉 Félicitations {member.mention} ! Tu vas pouvoir accéder à "
-                    "l’école des sorciers **Poudlard**.\n\n"
-                    f"➡️ Rends-toi dès maintenant au **Hall-d’Entrée** en cliquant sur le bouton ci-dessous."
-                )
+            # 🎉 Message RP intermédiaire avec SEUL bouton Hall
+            rp_message = (
+                f"🎉 Félicitations {member.mention} ! Tu vas pouvoir accéder à "
+                "l’école des sorciers **Poudlard**.\n\n"
+                f"➡️ Rends-toi dès maintenant au **Hall-d’Entrée** en cliquant sur le bouton ci-dessous."
+            )
 
-                view = EntryView(
+            sent_msg = await message.channel.send(
+                rp_message,
+                view=EntryView(
                     guild.id,
                     self.channel_ids["HALL"],
-                    self.channel_ids["GRANDE_SALLE"],
+                    origin_message=None  # on met None puis on réattache juste après
                 )
-                msg = await message.channel.send(rp_message, view=view)
+            )
 
-                self.bot.welcome_messages[member.id] = msg
+            # Réattacher le message d'origine pour suppression après clic
+            await sent_msg.edit(
+                view=EntryView(
+                    guild.id,
+                    self.channel_ids["HALL"],
+                    origin_message=sent_msg
+                )
+            )
 
-                async def delete_when_clicked():
-                    # supprime après 15 min si non utilisé
-                    await asyncio.sleep(900)
-                    if member.id in self.bot.welcome_messages:
-                        try:
-                            old_msg = self.bot.welcome_messages.pop(member.id)
-                            await old_msg.delete()
-                        except Exception:
-                            pass
+            self.bot.welcome_messages[member.id] = sent_msg
 
-                asyncio.create_task(delete_when_clicked())
+            async def delete_when_expired():
+                await asyncio.sleep(900)  # 15 min
+                if member.id in self.bot.welcome_messages:
+                    try:
+                        old_msg = self.bot.welcome_messages.pop(member.id)
+                        await old_msg.delete()
+                    except Exception:
+                        pass
+
+            asyncio.create_task(delete_when_expired())
 
 
 async def setup(bot):
